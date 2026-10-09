@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(./.product/tutti-frutti/**)",
+      "Bash(git -C .product/tutti-frutti log *)",
+      "Bash(git -C .product/tutti-frutti diff *)",
+      "Bash(git -C .product/tutti-frutti show *)"
+    ],
+    "deny": [
+      "Edit(./.product/**)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "R=\"$CLAUDE_PROJECT_DIR/.product/tutti-frutti\"; if git -C \"$R\" pull --ff-only --quiet 2>/dev/null; then echo \"Product code synced with GitHub.\"; else echo \"Product code: git pull failed (offline or local changes), using the local copy.\"; fi; git -C \"$R\" log -1 --format=\"Product code (.product/tutti-frutti) is at commit %h: %s (%cr)\"",
+            "timeout": 60,
+            "statusMessage": "Syncing tutti-frutti code from GitHub..."
+          }
+        ]
+      }
+    ]
+  }
+}

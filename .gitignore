@@ -1,0 +1,17 @@
+# Secrets: Qase credentials (template: .env.example)
+.env
+
+# Read-only clone of the product repo, it has its own GitHub repository
+.product/
+
+# Personal Claude Code settings (shared ones live in .claude/settings.json and CLAUDE.md)
+.claude/settings.local.json
+CLAUDE.local.md
+
+# Obsidian: per-device UI state (open tabs, panes)
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+
+# OS / Python junk
+.DS_Store
+__pycache__/
