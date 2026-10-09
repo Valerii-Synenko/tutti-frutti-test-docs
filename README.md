@@ -81,7 +81,9 @@ related: ["[[Registered user login]]"]
 - **Preconditions:** ...
 - **Steps:**
   1. ...
-- **Expected result:** `POST /auth/refresh` returns `401` "Refresh token has been revoked".
+- **Expected result:**
+  1. `POST /auth/logout` returns `204`.
+  2. `POST /auth/refresh` returns `401` "Refresh token has been revoked".
 - **Test data:** ...
 
 ## Open questions

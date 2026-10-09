@@ -157,8 +157,10 @@ related: ["[[Registered user login]]"]
 - **Behavior:** positive | negative | destructive
 - **Preconditions:** ...
 - **Steps:**
-  1. ...
-- **Expected result:** ...
+  1. Click the `Log out` button in the NavBar.
+- **Expected result:**
+  1. `localStorage` has no `tf_access_token` and no `tf_refresh_token`.
+  2. The `Log in` link is visible in the NavBar.
 - **Test data:** ...
 ```
 
@@ -169,7 +171,24 @@ related: ["[[Registered user login]]"]
   core flow, low = edge cases). Behavior: `positive` for a valid flow, `negative` for invalid input
   or an unauthorised/unexpected action, `destructive` for attempts to break the system.
 - The expected result states concrete values (exact error message, HTTP status, URL), not
-  "an error is displayed".
+  "an error is displayed". Write it as a numbered list, one check per item, even when there is
+  only one check.
+- Name UI elements the way a user sees them, by their visible text or label, in backticks: the
+  `Log out` button, the `Email` field, the `Cart` link; for elements without text, describe them
+  ("the user's name in the NavBar", "the cart counter on the `Cart` link"). Never put
+  `data-testid`s in case text: they belong to the automation code. Keep code formatting for
+  technical values (URLs, status codes, `localStorage` keys, JSON, claims).
+- Name pages, not routes, in steps, preconditions and test data: "Open the My Orders page",
+  "The Login page is open" (names as in the NavBar and the routes table above: Market, Fruit
+  detail, Login, Registration, Cart, My Orders, Cabinet). Use a URL only where the URL itself is
+  checked, e.g. "The URL is `/login`".
+- When Test data holds more than one value, write it as a bullet list, one value per line, with
+  an optional heading line ("Pages:"):
+  ```markdown
+  - **Test data:**
+    - `plainaddress`
+    - `user@`
+  ```
 
 ## Qase
 
