@@ -1,6 +1,6 @@
 ---
 name: qase-push
-description: Push the approved draft test cases of user stories to Qase with scripts/qase_sync.py (creates suites and cases, writes case keys into qase_cases, marks the story analyzed, removes the drafts). Use only when the user asks to push or upload cases to Qase ("залий схвалені", "push the approved ones", "залий кейси в Qase").
+description: Push the approved draft test cases of user stories to Qase with scripts/qase_sync.py (creates suites and cases, writes case keys into qase_cases, marks the story analyzed, removes the drafts). Use only when the user asks to push or upload cases to Qase ("push the approved ones", "upload the cases to Qase").
 argument-hint: [story name]
 ---
 

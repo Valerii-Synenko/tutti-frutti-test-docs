@@ -1,6 +1,6 @@
 ---
 name: review-story
-description: Review a user story written by a person and suggest improvements (vague wording, gaps, untestable ACs) as ready-to-paste proposals under "## Suggested improvements"; also applies the proposals the user accepts. Use when asked to review, analyse or improve a story ("review the story", "проаналізуй сторі", "застосуй пропозиції").
+description: Review a user story written by a person and suggest improvements (vague wording, gaps, untestable ACs) as ready-to-paste proposals under "## Suggested improvements"; also applies the proposals the user accepts. Use when asked to review, analyse or improve a story ("review the story", "apply suggestions 1 and 3").
 argument-hint: <story name> | apply <items>
 ---
 
@@ -54,7 +54,7 @@ Reply with a short summary: how many items per weight and the `must` ones in one
 
 ## 4. Apply (only on the user's command)
 
-When the user accepts items ("apply 1 and 3", "застосуй усі must"):
+When the user accepts items ("apply 1 and 3", "apply all must items"):
 - Edit the story text exactly as proposed. Renumber ACs only if asked.
 - Remove the applied items from `## Suggested improvements`; remove rejected ones if the user
   says so. Delete the section when it's empty.

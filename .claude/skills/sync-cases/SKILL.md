@@ -1,6 +1,6 @@
 ---
 name: sync-cases
-description: Sync the qase_cases lists in the user stories with Qase - remove keys of cases deleted in Qase and add cases created by hand in a story's Qase suite. Read-only towards Qase. Use when the user asks to sync stories with Qase or says they added or deleted cases in Qase ("синхронізуй з Qase", "sync cases", "я видалив кейс у Qase").
+description: Sync the qase_cases lists in the user stories with Qase - remove keys of cases deleted in Qase and add cases created by hand in a story's Qase suite. Read-only towards Qase. Use when the user asks to sync stories with Qase or says they added or deleted cases in Qase ("sync with Qase", "I deleted a case in Qase").
 ---
 
 # Sync qase_cases with Qase

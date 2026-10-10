@@ -1,6 +1,6 @@
 ---
 name: generate-cases
-description: Design test cases for a user story - check the story against the product code, apply test design techniques along the test pyramid, and write draft cases into the story's "## Test cases" section in the vault format. Use when asked to generate, write, add or fix test cases for a story ("згенеруй тест-кейси", "generate test cases").
+description: Design test cases for a user story - check the story against the product code, apply test design techniques along the test pyramid, and write draft cases into the story's "## Test cases" section in the vault format. Use when asked to generate, write, add or fix test cases for a story ("generate test cases for <story>").
 argument-hint: <story name>
 ---
 

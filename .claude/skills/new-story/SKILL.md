@@ -1,6 +1,6 @@
 ---
 name: new-story
-description: Create a new user story file from templates/user-story.md with the next free US-<n> id, the Qase sub-suite and wikilinks to related stories. Use when the user asks to create or write a new user story ("створи юзер сторі", "new story for ...").
+description: Create a new user story file from templates/user-story.md with the next free US-<n> id, the Qase sub-suite and wikilinks to related stories. Use when the user asks to create or write a new user story ("create a user story for ...").
 argument-hint: <feature area> / <story name or topic>
 ---
 

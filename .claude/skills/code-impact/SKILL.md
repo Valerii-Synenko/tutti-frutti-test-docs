@@ -1,6 +1,6 @@
 ---
 name: code-impact
-description: Check which user stories and Qase test cases are affected by changes in the Tutti Frutti product code since each story was analysed (code_commit), and report what to update - open questions that got resolved, ACs or cases whose expected results changed, line references that moved. Use when the user asks what changed in the product, whether stories or cases are still up to date, or after the product repo got new commits ("що змінилось у коді", "code impact", "чи актуальні сторі").
+description: Check which user stories and Qase test cases are affected by changes in the Tutti Frutti product code since each story was analysed (code_commit), and report what to update - open questions that got resolved, ACs or cases whose expected results changed, line references that moved. Use when the user asks what changed in the product, whether stories or cases are still up to date, or after the product repo got new commits ("what changed in the code?", "are the stories still up to date?").
 ---
 
 # Code impact: which stories and cases does a product change affect?
