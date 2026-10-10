@@ -93,11 +93,12 @@ def parse_cases(body: str) -> list[dict]:
             continue
         title, _, rest = raw[len("### TC:"):].partition("\n")
         case = {"title": title.strip(), "steps": [], "raw": raw, "approved": False, "rejected": False}
-        field = None
+        field = sub = None
         for line in rest.splitlines():
             cb = CHECKBOX.match(line)
             fm = re.match(r"^- \*\*(.+?):\*\*[ \t]*(.*)$", line)
-            sm = re.match(r"^\s+\d+\.\s+(.*)$", line)
+            sm = re.match(r"^ {2,3}\d+\.\s+(.*)$", line)          # a step: "  1. Login as the user"
+            sub_m = re.match(r"^ {4,}(Data|Expected):[ \t]*(.*)$", line, re.I)  # "     Data:" / "     Expected:"
             if cb:
                 case["approved" if cb.group(2).lower() == "approved" else "rejected"] = cb.group(1) != " "
                 field = None
@@ -105,14 +106,28 @@ def parse_cases(body: str) -> list[dict]:
                 field = fm.group(1).strip().lower()
                 if field != "steps":
                     case[field] = fm.group(2).strip()
-            elif sm and field == "steps":
-                case["steps"].append(sm.group(1).strip())
+            elif field == "steps" and sm:
+                case["steps"].append({"action": sm.group(1).strip(), "data": "", "expected": ""})
+                sub = None
+            elif field == "steps" and sub_m and case["steps"]:
+                sub = sub_m.group(1).lower()
+                case["steps"][-1][sub] = sub_m.group(2).strip()
+            elif line.strip() and field == "steps" and case["steps"]:
+                step = case["steps"][-1]
+                if sub:   # a line of the step's Data or Expected block
+                    step[sub] = (step[sub] + "\n" + line.strip()).strip()
+                else:     # the action wraps onto the next line
+                    step["action"] += " " + line.strip()
             elif line.strip() and field:
                 # continuation line of a multi-line value
-                if field == "steps" and case["steps"]:
-                    case["steps"][-1] += " " + line.strip()
-                else:
-                    case[field] = (case.get(field, "") + "\n" + line.strip()).strip()
+                case[field] = (case.get(field, "") + "\n" + line.strip()).strip()
+        # Older drafts: a case-level Expected result / Test data belongs to the last step.
+        if case["steps"]:
+            last = case["steps"][-1]
+            if case.get("expected result") and not last["expected"]:
+                last["expected"] = case["expected result"]
+            if case.get("test data") and not last["data"]:
+                last["data"] = case["test data"]
         cases.append(case)
     return cases
 
@@ -126,11 +141,13 @@ def decision(case: dict) -> str:
 def validate(cases: list[dict], story: str) -> None:
     errors = []
     for c in cases:
-        for key in ("description", "ac", "level", "severity", "priority", "type", "behavior", "expected result"):
+        for key in ("description", "ac", "level", "severity", "priority", "type", "behavior"):
             if not c.get(key):
                 errors.append(f"'{c['title']}': missing **{key.capitalize()}**")
         if not c["steps"]:
             errors.append(f"'{c['title']}': no steps")
+        elif not any(s["expected"] for s in c["steps"]):
+            errors.append(f"'{c['title']}': no step has an Expected block")
         for key, allowed in FIELDS.items():
             if c.get(key) and c[key].lower() not in allowed:
                 errors.append(f"'{c['title']}': {key} '{c[key]}' is not one of {', '.join(allowed)}")
@@ -145,10 +162,14 @@ def validate(cases: list[dict], story: str) -> None:
 def to_qase(case: dict, story_id: str, suite_id: int | None, ids=None) -> dict:
     """`ids(field, value)` returns the Qase option ID; without it (dry run) values stay as text."""
     ids = ids or (lambda field, value: value)
-    steps = [{"action": s, "position": i + 1} for i, s in enumerate(case["steps"])]
-    steps[-1]["expected_result"] = case["expected result"]
-    if case.get("test data"):
-        steps[-1]["data"] = case["test data"]
+    steps = []
+    for i, step in enumerate(case["steps"], 1):
+        s = {"action": step["action"], "position": i}
+        if step["data"] and step["data"] != "—":
+            s["data"] = step["data"]
+        if step["expected"]:
+            s["expected_result"] = step["expected"]
+        steps.append(s)
     tags = [story_id, *re.findall(r"AC-\d+", case["ac"]), *case["level"].lower().replace("|", " ").split()]
     return {
         "title": case["title"],

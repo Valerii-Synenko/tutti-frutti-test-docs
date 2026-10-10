@@ -3,7 +3,6 @@ id: US-1
 status: analyzed
 qase_suite: User & Auth.Registration
 qase_cases:
-  - TF-39
   - TF-40
   - TF-41
   - TF-42

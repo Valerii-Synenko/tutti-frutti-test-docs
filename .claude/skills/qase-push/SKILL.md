@@ -38,8 +38,8 @@ no drafts are left removes `## Test cases` and sets `status: analyzed`.
 
 Field mapping: Severity, Priority, Type, Behavior → Qase fields of the same name (option IDs looked
 up via `GET /system_field`); Level → layer (`API` → api, `UI`/`both` → e2e); Description →
-description; Preconditions → preconditions; each step → a step; Expected result and Test data →
-the last step; story ID, AC and Level → tags (`US-3`, `AC-6`, `api`).
+description; Preconditions → preconditions; each step → a Qase step with its own Data and Expected
+result; story ID, AC and Level → tags (`US-3`, `AC-6`, `api`).
 
 ## 3. If it fails
 

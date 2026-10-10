@@ -56,15 +56,29 @@ Put the cases in a `## Test cases` section before `## Open questions`, in exactl
 - **Priority:** high | medium | low
 - **Type:** functional | smoke | regression | security | usability | performance | acceptance | compatibility | integration | exploratory | other
 - **Behavior:** positive | negative | destructive
-- **Preconditions:** The Login page is open.
+- **Preconditions:** A registered user exists with full name `Jane Tester`.
 - **Steps:**
-  1. Click the `Log out` button in the NavBar.
-- **Expected result:**
-  1. `localStorage` has no `tf_access_token` and no `tf_refresh_token`.
-  2. The `Log in` link is visible in the NavBar.
-- **Test data:**
-  - `plainaddress`
-  - `user@`
+  1. Login as the user
+     Data:
+     email: `jane-<timestamp>@example.com`
+     password: `Password1!`
+     Expected:
+     1. The user is redirected to the Market page.
+     2. The NavBar shows "Jane Tester".
+  2. Log out
+     Expected:
+     1. The `Log in` link is visible.
+```
+
+The steps are written the way the autotests are (`with qase.step("Login as the user"):`), so a
+step title can be copied into `qase.step(...)` as is:
+
+```python
+@qase.id(37)
+def test_login(self, login_page, user):
+    with qase.step("Login as the user"):
+        market_page = login_page.goto().login(user.email, user.password)
+        expect(market_page.nav_bar.user_link).to_have_text(user.full_name)
 ```
 
 Rules:
@@ -77,17 +91,24 @@ Rules:
 - **Severity** = impact of a failure. **Priority** = how soon it must run (high = smoke-level core
   flow, low = edge cases). **Behavior:** `positive` valid flow, `negative` invalid input or an
   unauthorised/unexpected action, `destructive` attempts to break the system.
-- **Expected result:** a numbered list, one check per item, even for a single check. Concrete
-  values (exact message, HTTP status, URL), never "an error is displayed".
+- **Steps** are business-level actions, one per `qase.step`: "Login as the user", "Log out",
+  "Register via the API with an invalid email" — not single clicks ("open / type / click" is one
+  step). A step title is a short imperative phrase with no concrete values.
+- **Data** (optional, per step): every concrete value the step uses — endpoint, fields, inputs,
+  browser. One `key: value` per line; alternative values as a bullet list with a heading line
+  ("Emails:", "Passwords:"). Never put the values in the step title.
+- **Expected** (per step, at least one step has it): what is checked right after that step, as a
+  numbered list, one check per item, even for a single check. Phrase it from the user's side ("The
+  user is redirected to the Market page", "The response status is `201`") with concrete values
+  (exact message, status, field value), never "an error is displayed". No separate "Check that..."
+  steps: checks go into the Expected block of the step they follow.
 - **UI elements:** named as the user sees them, by visible text or label, in backticks: the
   `Log out` button, the `Email` field, the `Cart` link; elements without text are described ("the
   user's name in the NavBar", "the cart counter on the `Cart` link"). Never `data-testid`s.
-- **Pages, not routes,** in steps, preconditions and test data: "Open the My Orders page" (Market,
+- **Pages, not routes,** in steps, preconditions and data: "Open the My Orders page" (Market,
   Fruit detail, Login, Registration, Cart, My Orders, Cabinet). A URL only where the URL itself is
   checked: "The URL is `/login`".
 - **Code formatting** for technical values: URLs, status codes, `localStorage` keys, JSON, claims.
-- **Test data:** more than one value → a bullet list, one value per line, optional heading line
-  ("Pages:"). A single value stays inline; none → `—`.
 
 ## 5. Finish
 

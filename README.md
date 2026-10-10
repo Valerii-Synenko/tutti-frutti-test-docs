@@ -88,11 +88,17 @@ related: ["[[Registered user login]]"]
 - **Behavior:** positive
 - **Preconditions:** ...
 - **Steps:**
-  1. ...
-- **Expected result:**
-  1. `POST /auth/logout` returns `204`.
-  2. `POST /auth/refresh` returns `401` "Refresh token has been revoked".
-- **Test data:** ...
+  1. Log out with the refresh token
+     Data:
+     `POST /auth/logout`, body `{"refresh_token": "<refresh_token>"}`
+     Expected:
+     1. The response status is `204`.
+  2. Exchange the refresh token for a new access token
+     Data:
+     `POST /auth/refresh`, body `{"refresh_token": "<refresh_token>"}`
+     Expected:
+     1. The response status is `401`.
+     2. The body is `{"detail": "Refresh token has been revoked"}`.
 
 ## Open questions
 - **AC-6:** ... (`services/users-service/app/main.py:197`)
@@ -184,8 +190,8 @@ modified.
 - Cases already in Qase (by the keys in `qase_cases`, or by title in the suite) are updated from
   the story instead of duplicated. `--no-update` only creates the missing cases.
 - Field mapping: Severity, Priority, Type, Behavior → the Qase fields of the same name; Level →
-  layer (`API` → api, `UI`/`both` → e2e); Preconditions → preconditions; each step → a Qase step;
-  Expected result and Test data → the last step; Description → description; story ID, AC and Level
+  layer (`API` → api, `UI`/`both` → e2e); Preconditions → preconditions; each step → a Qase step
+  with its own Data and Expected result; Description → description; story ID, AC and Level
   → tags (`US-3`, `AC-6`, `api`).
   Option IDs are read from Qase at push time, not hardcoded.
 
