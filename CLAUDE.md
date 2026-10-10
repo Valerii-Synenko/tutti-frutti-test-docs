@@ -70,7 +70,8 @@ user-stories/
 templates/
   user-story.md            ← template for the core Templates plugin
 scripts/
-  qase_sync.py             ← pushes a story's test cases to Qase
+  qase_sync.py             ← pushes test cases to Qase, syncs qase_cases
+.claude/skills/            ← workflows: new-story, review-story, generate-cases, qase-push, sync-cases
 .env                       ← Qase credentials (gitignored; template: .env.example)
 CLAUDE.md
 ```
@@ -122,115 +123,31 @@ related: ["[[Registered user login]]"]
 
 ## Working with stories
 
-1. **Don't rewrite requirements.** The story text belongs to its author. If something is unclear,
-   contradicts itself or contradicts the code, record it under `## Open questions` at the end of
-   the file. Leave the story text itself unchanged.
-2. **Check against the code.** Before generating cases, look in `.product/tutti-frutti` at how the
-   behaviour is actually implemented: error messages, validation rules, redirects, `data-testid`s.
-   Record every mismatch under `Open questions` with a file and line reference.
-3. **Test design.** For each acceptance criterion, apply the techniques that fit: equivalence
-   partitioning, boundary values (e.g. password length 7/8/9), decision tables for combinations
-   of rules, state transitions for listing and order statuses. Cover both positive and negative
-   scenarios.
-4. **Traceability.** Every case references the AC number it verifies. Every AC has at least one
-   case. If an AC can't be tested (e.g. "secure data"), flag it under `Open questions`.
-5. **Test level.** For each case, state where it is best automated: `API` (via the gateway), `UI`
-   (Playwright) or `both`. Check JWT contents (roles, claims) at the API level.
-6. **Test pyramid.** Design the set of cases for a story along the test pyramid: most cases at the
-   API level (business rules, validation, status codes, error messages, permissions, data
-   combinations), fewer at the UI level. Don't repeat at the UI what an API case already proves;
-   a UI case checks what only the browser shows: page flow and redirects, what's visible on the
-   page, form behaviour, browser storage and navigation. This is a guideline, not a quota: when a
-   UI case is important (a key user journey, a security-relevant screen state, a UI-only rule),
-   write it. Unit tests are out of scope for this vault (they live in the product repo).
+- **Don't rewrite requirements.** The story text belongs to its author. Unclear points,
+  contradictions and mismatches with the code go under `## Open questions` (with a file and line
+  reference); the text changes only when the user accepts a suggested improvement.
+- **Workflows are skills** in `.claude/skills/`; follow the matching one:
 
-## Test case format
-
-```markdown
-### TC: <Short imperative title>
-- **Description:** Checks that <condition> leads to <expected behaviour>.
-- **AC:** AC-2
-- **Level:** API | UI | both
-- **Severity:** blocker | critical | major | normal | minor
-- **Priority:** high | medium | low
-- **Type:** functional | smoke | regression | security | usability | performance | acceptance | compatibility | integration | exploratory | other
-- **Behavior:** positive | negative | destructive
-- **Preconditions:** ...
-- **Steps:**
-  1. Click the `Log out` button in the NavBar.
-- **Expected result:**
-  1. `localStorage` has no `tf_access_token` and no `tf_refresh_token`.
-  2. The `Log in` link is visible in the NavBar.
-- **Test data:** ...
-```
-
-- The title is short and unique within the suite. The Qase case is created from it.
-- Description is one or two plain sentences for a human reader: what the case checks and why it
-  matters, without steps or IDs (the story, AC and level are already in the tags).
-- Severity is the impact of a failure; Priority is how soon the case must run (high = smoke-level
-  core flow, low = edge cases). Behavior: `positive` for a valid flow, `negative` for invalid input
-  or an unauthorised/unexpected action, `destructive` for attempts to break the system.
-- The expected result states concrete values (exact error message, HTTP status, URL), not
-  "an error is displayed". Write it as a numbered list, one check per item, even when there is
-  only one check.
-- Name UI elements the way a user sees them, by their visible text or label, in backticks: the
-  `Log out` button, the `Email` field, the `Cart` link; for elements without text, describe them
-  ("the user's name in the NavBar", "the cart counter on the `Cart` link"). Never put
-  `data-testid`s in case text: they belong to the automation code. Keep code formatting for
-  technical values (URLs, status codes, `localStorage` keys, JSON, claims).
-- Name pages, not routes, in steps, preconditions and test data: "Open the My Orders page",
-  "The Login page is open" (names as in the NavBar and the routes table above: Market, Fruit
-  detail, Login, Registration, Cart, My Orders, Cabinet). Use a URL only where the URL itself is
-  checked, e.g. "The URL is `/login`".
-- When Test data holds more than one value, write it as a bullet list, one value per line, with
-  an optional heading line ("Pages:"):
-  ```markdown
-  - **Test data:**
-    - `plainaddress`
-    - `user@`
-  ```
+| Skill | When |
+|---|---|
+| `new-story` | create a story from the template |
+| `review-story` | review a story written by a person, suggest and apply improvements |
+| `generate-cases` | design draft test cases (test design rules and the case format live here) |
+| `qase-push` | push approved cases to Qase |
+| `sync-cases` | bring `qase_cases` in line with Qase after manual changes there |
 
 ## Qase
 
-- Suites are two levels: `<folder name>.<sub-suite>` in `qase_suite`, e.g. `User & Auth.Logout`.
-  The parent suite is the story's folder; the sub-suite is a short name of the story's feature
-  (one story = one sub-suite), so a feature area with many cases stays readable.
-- Case lifecycle:
-  1. **Draft.** Generated cases go into a `## Test cases` section of the story, before
-     `## Open questions`, in the exact format above (the sync script parses it).
-  2. **Approval.** The user reviews the drafts and sets `test_cases_approved: true`.
-  3. **Push.** `scripts/qase_sync.py` pushes the cases of approved stories, writes their keys into
-     `qase_cases` (`[TF-2, TF-3]`), sets `status: analyzed` and removes the `## Test cases`
-     section. From then on Qase is the source of truth for those cases; change them there.
-- Automated tests reference cases by the number of the key: `TF-11` → `@qase.id(11)`.
-- Don't create or change anything in Qase unless explicitly asked, or unless the user approved the
-  story (`test_cases_approved: true`), which counts as the request to push it.
-- Push to Qase only with `scripts/qase_sync.py`, never with hand-written API calls or MCP:
-  - `python3 scripts/qase_sync.py "<story path>" --dry-run`: validates the drafts and prints the
-    payload, sends nothing. Works on stories that are not approved yet.
-  - `python3 scripts/qase_sync.py --approved`: pushes every approved story that still has drafts.
-  - `python3 scripts/qase_sync.py "<story path>"`: pushes one story; refuses if it isn't approved.
-  - `python3 scripts/qase_sync.py --sync`: brings every story's `qase_cases` in line with Qase:
-    drops the cases deleted there and adds the ones created by hand in the story's `qase_suite`
-    (cases in a parent or unrelated suite are ignored). Read-only towards Qase; run it when the
-    user asks to sync.
-- Pushing is manual: run `--approved` when the user asks to push the approved stories (e.g.
-  "push the approved ones"). Nothing runs automatically.
-  - Cases already in Qase (by the keys in `qase_cases`, or by title in the target suite) are
-    updated instead of duplicated: fields, steps and suite. `--no-update` only creates the missing
-    ones. Renaming a case's title creates a new case.
-- The script reads `QASE_API_TOKEN` and `QASE_PROJECT` (default `TF`) from `.env` in the vault
-  root (template: `.env.example`); real environment variables override it. If the token is
-  missing, the script asks for it interactively and saves it to `.env`. If the project doesn't
-  exist in Qase, the script creates it. `.env` is the user's file: never read, print or edit it,
-  and never write the token anywhere else.
-- When running the script from Claude Code there is no interactive input, so a missing token makes
-  it exit with an error. Then ask the user to run it once themselves in a terminal or in Thonny and
-  paste the token.
-- Qase field mapping: Severity, Priority, Type, Behavior → the same system fields; Level → layer
-  (`API` → api, `UI` and `both` → e2e) and a tag; Preconditions → preconditions; each step → a
-  step; Expected result and Test data → the last step; Description → description; story ID, AC
-  and Level → tags (`US-3`, `AC-6`, `api`). Option IDs are looked up in Qase (`GET /system_field`), not hardcoded.
+- Suites have two levels: `<folder name>.<sub-suite>` in `qase_suite`, e.g. `User & Auth.Logout`
+  (one story = one sub-suite).
+- Case lifecycle: drafts in the story's `## Test cases` → the user sets
+  `test_cases_approved: true` → `qase-push` moves them to Qase, writes the keys into `qase_cases`,
+  sets `status: analyzed` and removes the drafts. From then on Qase is the source of truth.
+- Automated tests reference cases by the key's number: `TF-11` → `@qase.id(11)`.
+- Change Qase only through `scripts/qase_sync.py` and only when the user asks (approval of a story
+  counts as the request to push it). Never use hand-written API calls or the Qase MCP server.
+- `.env` holds the user's Qase token (gitignored): never read, print or edit it, and never write
+  the token anywhere else.
 
 ## Language
 

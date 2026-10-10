@@ -17,6 +17,10 @@ notes, but every file is plain Markdown and renders on GitHub as well.
 ```
 
 1. **Story.** Each story has a description and numbered acceptance criteria (`AC-1`, `AC-2`, ...).
+   A story written by a person is reviewed first: vague wording, gaps (negative paths, limits,
+   error states) and untestable ACs come back as ready-to-paste proposals under
+   `## Suggested improvements`, weighted `must` / `should` / `nice`. The author decides which to
+   apply.
 2. **Analysis.** The story is checked against the product source code: validation rules, error
    messages, HTTP statuses, redirects, `data-testid`s. Every gap, contradiction or untestable AC is
    recorded under `## Open questions` with a file and line reference. The requirement text itself
@@ -43,7 +47,8 @@ templates/
   user-story.md                ← template for new stories
 scripts/
   qase_sync.py                 ← pushes test cases to Qase
-CLAUDE.md                      ← working rules (formats, conventions, test design)
+CLAUDE.md                      ← rules that always apply (product, formats, conventions)
+.claude/skills/                ← workflows: story review, test design, Qase push and sync
 .env.example                   ← Qase settings template (.env is created on the first push)
 ```
 
@@ -90,7 +95,8 @@ related: ["[[Registered user login]]"]
 - **AC-6:** ... (`services/users-service/app/main.py:197`)
 ```
 
-Full conventions are in [CLAUDE.md](CLAUDE.md).
+The story format is in [CLAUDE.md](CLAUDE.md); the test case format and the test design rules are in
+[`.claude/skills/generate-cases`](.claude/skills/generate-cases/SKILL.md).
 
 ## Setup
 
@@ -201,9 +207,21 @@ payload before anything is sent, and it works without an AI assistant at all.
 
 ## AI-assisted
 
-The vault is set up for [Claude Code](https://claude.com/claude-code): `CLAUDE.md` describes the
-formats and the test design rules, and a session start hook pulls the latest product code before
-each session. Story analysis and case drafts are produced with its help and reviewed by hand.
+The vault is set up for [Claude Code](https://claude.com/claude-code). `CLAUDE.md` holds only the
+rules that always apply (product, vault structure, story format, Qase basics); each workflow is a
+[skill](https://docs.claude.com/en/docs/claude-code/skills) in `.claude/skills/`, loaded only when
+it's needed, which keeps every session's context small:
+
+| Skill | What it does |
+|---|---|
+| `/new-story` | creates a story from the template with the next free `US-<n>` id |
+| `/review-story` | reviews a story written by a person and proposes ready-to-paste improvements |
+| `/generate-cases` | checks the story against the code and designs draft test cases |
+| `/qase-push` | pushes approved cases to Qase |
+| `/sync-cases` | updates `qase_cases` after cases are added or deleted in Qase by hand |
+
+A session start hook pulls the latest product code before each session. Story analysis and case
+drafts are produced with Claude's help and reviewed by hand.
 
 Vault content is always written in English, but the chat language is personal: on the first
 session, Claude asks which language you prefer and saves it to `CLAUDE.local.md` (gitignored).
