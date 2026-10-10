@@ -15,7 +15,7 @@ argument-hint: <feature area> / <story name or topic>
 3. **Frontmatter** from `templates/user-story.md`:
    - `status: draft`
    - `qase_suite: <area>.<short feature name>`, e.g. `User & Auth.Logout`
-   - `qase_cases: []`, `test_cases_approved: false`
+   - `qase_cases: []`
    - `related:` wikilinks to related stories as a block list (`  - "[[Registered user login]]"`)
    - `code_commit:` the product commit you read (`git -C .product/tutti-frutti rev-parse --short
      HEAD`) and `code_paths:` the files the story depends on, as a block list

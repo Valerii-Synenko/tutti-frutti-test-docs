@@ -94,7 +94,6 @@ id: US-1
 status: draft            # draft → ready → analyzed
 qase_suite: User & Auth.Login
 qase_cases: []           # Qase case keys (TF-2, TF-3, ...), filled in by the sync script
-test_cases_approved: false  # the user sets true to push the draft cases
 code_commit: 4e3851b     # product commit the story was analysed against
 code_paths: []           # product files the story depends on (for code-impact)
 related: ["[[Registered user login]]"]
@@ -120,10 +119,8 @@ related: ["[[Registered user login]]"]
   lines, or the YAML ends up with two values.
 - If an older story has no frontmatter, add it when you work on that story, without changing the
   story text.
-- Change `status` only when told to. `analyzed` is set by the sync script once the approved cases
-  are in Qase.
-- `test_cases_approved` belongs to the user: never set it to `true`. Set it to `false` whenever you
-  add or rewrite draft cases in a story, so they get reviewed before the next push.
+- Change `status` only when told to. `analyzed` is set by the sync script once no draft cases are
+  left in the story.
 
 ## Working with stories
 
@@ -145,12 +142,17 @@ related: ["[[Registered user login]]"]
 
 - Suites have two levels: `<folder name>.<sub-suite>` in `qase_suite`, e.g. `User & Auth.Logout`
   (one story = one sub-suite).
-- Case lifecycle: drafts in the story's `## Test cases` → the user sets
-  `test_cases_approved: true` → `qase-push` moves them to Qase, writes the keys into `qase_cases`,
-  sets `status: analyzed` and removes the drafts. From then on Qase is the source of truth.
+- Case lifecycle: drafts in the story's `## Test cases`, each with two checkboxes:
+  `- [ ] Approved` and `- [ ] Not relevant`. The user ticks them (and may edit a draft before
+  approving it). `qase-push` pushes the approved drafts with the user's edits, appends their keys
+  to `qase_cases` and removes them from the story; not relevant drafts are removed without
+  pushing; undecided ones stay. When no drafts are left, `status` becomes `analyzed`. Pushed
+  cases live in Qase from then on.
+- The checkboxes belong to the user: never tick them. When you rewrite a draft, untick
+  `Approved` so it gets reviewed again.
 - Automated tests reference cases by the key's number: `TF-11` → `@qase.id(11)`.
-- Change Qase only through `scripts/qase_sync.py` and only when the user asks (approval of a story
-  counts as the request to push it). Never use hand-written API calls or the Qase MCP server.
+- Change Qase only through `scripts/qase_sync.py` and only when the user asks (ticking `Approved`
+  doesn't push by itself). Never use hand-written API calls or the Qase MCP server.
 - `.env` holds the user's Qase token (gitignored): never read, print or edit it, and never write
   the token anywhere else.
 

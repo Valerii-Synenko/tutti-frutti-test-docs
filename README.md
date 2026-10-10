@@ -28,10 +28,11 @@ notes, but every file is plain Markdown and renders on GitHub as well.
 3. **Test design.** Cases are derived per AC with equivalence partitioning, boundary values,
    decision tables and state transitions. Every case traces back to an AC, every AC has at least
    one case, and every case states where it is best automated: `API`, `UI` (Playwright) or `both`.
-4. **Approval and Qase.** Draft cases are reviewed in the story. Setting
-   `test_cases_approved: true` approves them; `scripts/qase_sync.py` then pushes them to Qase,
-   writes the case keys (`TF-2`, `TF-3`, ...) into the frontmatter, marks the story `analyzed` and
-   removes the drafts from the story. From then on Qase is the source of truth for the cases.
+4. **Approval and Qase.** Every draft case has two checkboxes, `Approved` and `Not relevant`,
+   ticked in Obsidian after review (a draft can be edited by hand first). `scripts/qase_sync.py`
+   pushes the approved drafts to Qase with those edits, writes their keys (`TF-2`, `TF-3`, ...)
+   into the frontmatter and removes them from the story; not relevant drafts are dropped. When no
+   drafts are left, the story is marked `analyzed`. From then on Qase is the source of truth.
 5. **Automation.** The case numbers are used as `@qase.id(...)` in the automated tests
    (`TF-11` → `@qase.id(11)`), so results are reported against the right cases.
 
@@ -64,7 +65,6 @@ id: US-3
 status: draft            # draft → ready → analyzed
 qase_suite: User & Auth.Logout
 qase_cases: []           # case keys (TF-2, TF-3, ...), filled in by scripts/qase_sync.py
-test_cases_approved: false  # set to true to push the draft cases
 related: ["[[Registered user login]]"]
 ---
 
@@ -76,6 +76,8 @@ related: ["[[Registered user login]]"]
 
 ## Test cases               ← drafts; removed once pushed to Qase
 ### TC: Revoke refresh token on logout
+- [x] Approved
+- [ ] Not relevant
 - **Description:** Checks that logout revokes the refresh token on the server, so it can no
   longer be used to get a new access token.
 - **AC:** AC-6
@@ -138,28 +140,29 @@ stops with `error: the following arguments are required: story`. To pass it:
    ```
    "../user-stories/User & Auth/User logout.md" --dry-run
    ```
-3. Press **Run**. To push, approve the story (`test_cases_approved: true`) and replace the
+3. Press **Run**. To push, tick `Approved` / `Not relevant` on the drafts and replace the
    arguments with `--approved`.
 
 ## Pushing test cases to Qase
 
-1. Review the draft cases in the story and set `test_cases_approved: true` (in Obsidian it's a
-   checkbox in the story's Properties).
+1. Review the draft cases in the story; edit them if needed. On each one tick `Approved` (push it)
+   or `Not relevant` (drop it); leave both empty to keep it as a draft.
 2. Push:
 
 ```bash
-# validate a story's drafts and print the payload, nothing is sent (no approval needed)
+# validate a story's drafts and print the payload, nothing is sent (no ticks needed)
 python3 scripts/qase_sync.py "user-stories/User & Auth/User logout.md" --dry-run
 
-# push every approved story that still has drafts
+# process every story with ticked drafts
 python3 scripts/qase_sync.py --approved
 
-# or push one approved story
+# or one story
 python3 scripts/qase_sync.py "user-stories/User & Auth/User logout.md"
 ```
 
-After a push the story gets the case keys in `qase_cases` (`TF-2`, `TF-3`, ...) and `status: analyzed`, and its
-`## Test cases` section is removed. Further edits to those cases are made in Qase.
+After a push the approved cases' keys are appended to `qase_cases` (`TF-2`, `TF-3`, ...) and the
+decided drafts disappear from the story; when none are left, the `## Test cases` section goes too
+and the story becomes `analyzed`. Further edits to those cases are made in Qase.
 
 If you add or delete cases in Qase by hand, bring the stories in line with:
 

@@ -22,7 +22,6 @@ qase_cases:
   - TF-55
   - TF-56
   - TF-57
-test_cases_approved: true
 code_commit: 4e3851b
 code_paths:
   - services/users-service/app/main.py

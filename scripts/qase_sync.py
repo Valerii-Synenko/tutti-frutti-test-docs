@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
 """Push the approved test cases of user stories to Qase.
 
-A story's draft cases live in its `## Test cases` section (format: see
-CLAUDE.md). Once the user sets `test_cases_approved: true` in the frontmatter,
-this script pushes them: it creates the suite from `qase_suite` if it doesn't
-exist (nested suites use a dot: "User & Auth.Logout"), creates the cases in one
-bulk request, writes their keys into `qase_cases` (TF-2, TF-3, ...), sets
-`status: analyzed` and removes the draft `## Test cases` section from the
-story. From then on Qase is the source of truth for those cases.
+A story's draft cases live in its `## Test cases` section (format: see the
+generate-cases skill). Each draft has two checkboxes the user ticks in Obsidian:
+
+    - [x] Approved        → pushed to Qase (with any manual edits), then removed
+    - [ ] Not relevant    → removed from the story, never pushed
+
+Undecided drafts stay in the story. On push the script creates the suite from
+`qase_suite` if needed (nested suites use a dot: "User & Auth.Logout"), creates
+the approved cases in one bulk request and appends their keys to `qase_cases`.
+When no drafts are left, the section is removed and `status` becomes `analyzed`.
+From then on Qase is the source of truth for those cases.
 
 Cases already in Qase (their IDs are in `qase_cases`, or a case with the same
-title is in the target suite) are not created again but updated from the story:
-fields, steps, and the suite, so changing `qase_suite` moves them. Re-running
-is safe; pass --no-update to only create the missing cases.
+title is in the target suite) are updated instead of duplicated: fields, steps
+and suite. Pass --no-update to only create the missing ones.
 
 Usage:
-    python3 scripts/qase_sync.py --approved          # every approved story with draft cases
-    python3 scripts/qase_sync.py "<story path>"      # one story (must be approved)
+    python3 scripts/qase_sync.py --approved          # every story with approved / not relevant drafts
+    python3 scripts/qase_sync.py "<story path>"      # one story
     python3 scripts/qase_sync.py "<story path>" --dry-run   # validate drafts, send nothing
     python3 scripts/qase_sync.py --sync              # match qase_cases to Qase (deleted/added)
     python3 scripts/qase_sync.py "<story path>" --show      # print the story's cases from Qase
@@ -72,20 +75,33 @@ def fm_value(frontmatter: str, key: str) -> str:
     return re.sub(r"\s+#.*$", "", m.group(1)).strip().strip("\"'") if m else ""
 
 
-def parse_cases(body: str) -> list[dict]:
-    m = re.search(r"^## Test cases[ \t]*\n(.*?)(?=^## |\Z)", body, re.M | re.S)
-    if not m:
-        sys.exit("error: story has no '## Test cases' section")
+CHECKBOX = re.compile(r"^- \[([ xX])\][ \t]+(approved|not relevant)[ \t]*$", re.I)
 
+
+def cases_section(body: str):
+    return re.search(r"^## Test cases[ \t]*\n(.*?)(?=^## |\Z)", body, re.M | re.S)
+
+
+def parse_cases(body: str) -> list[dict]:
+    """Draft cases with their checkboxes (`approved`, `rejected`) and their raw Markdown (`raw`)."""
+    m = cases_section(body)
+    if not m:
+        return []
     cases = []
-    for block in re.split(r"^### TC:[ \t]*", m.group(1), flags=re.M)[1:]:
-        title, _, rest = block.partition("\n")
-        case = {"title": title.strip(), "steps": []}
+    for raw in re.split(r"(?m)^(?=### TC:)", m.group(1)):
+        if not raw.startswith("### TC:"):
+            continue
+        title, _, rest = raw[len("### TC:"):].partition("\n")
+        case = {"title": title.strip(), "steps": [], "raw": raw, "approved": False, "rejected": False}
         field = None
         for line in rest.splitlines():
+            cb = CHECKBOX.match(line)
             fm = re.match(r"^- \*\*(.+?):\*\*[ \t]*(.*)$", line)
             sm = re.match(r"^\s+\d+\.\s+(.*)$", line)
-            if fm:
+            if cb:
+                case["approved" if cb.group(2).lower() == "approved" else "rejected"] = cb.group(1) != " "
+                field = None
+            elif fm:
                 field = fm.group(1).strip().lower()
                 if field != "steps":
                     case[field] = fm.group(2).strip()
@@ -98,7 +114,16 @@ def parse_cases(body: str) -> list[dict]:
                 else:
                     case[field] = (case.get(field, "") + "\n" + line.strip()).strip()
         cases.append(case)
+    return cases
 
+
+def decision(case: dict) -> str:
+    if case["approved"] and case["rejected"]:
+        return "conflict"
+    return "approved" if case["approved"] else "rejected" if case["rejected"] else "draft"
+
+
+def validate(cases: list[dict], story: str) -> None:
     errors = []
     for c in cases:
         for key in ("description", "ac", "level", "severity", "priority", "type", "behavior", "expected result"):
@@ -114,8 +139,7 @@ def parse_cases(body: str) -> list[dict]:
     titles = [c["title"] for c in cases]
     errors += [f"duplicate title '{t}'" for t in sorted({t for t in titles if titles.count(t) > 1})]
     if errors:
-        sys.exit("error: invalid test cases:\n  " + "\n  ".join(errors))
-    return cases
+        sys.exit(f"error: {story}: invalid test cases:\n  " + "\n  ".join(errors))
 
 
 def to_qase(case: dict, story_id: str, suite_id: int | None, ids=None) -> dict:
@@ -237,12 +261,8 @@ def ask_token() -> str:
     return token
 
 
-def has_cases(body: str) -> bool:
-    return re.search(r"^## Test cases[ \t]*$", body, re.M) is not None
-
-
-def is_approved(frontmatter: str) -> bool:
-    return fm_value(frontmatter, "test_cases_approved").lower() in ("true", "yes")
+def has_decisions(body: str) -> bool:
+    return any(decision(c) in ("approved", "rejected") for c in parse_cases(body))
 
 
 # A key's whole entry: its line plus any indented continuation lines (a block list).
@@ -352,42 +372,63 @@ def push_story(path: Path, project: str, token: str, ids, no_update: bool) -> No
     story_id, suite_path = fm_value(frontmatter, "id"), fm_value(frontmatter, "qase_suite")
     if not suite_path:
         sys.exit(f"error: {path.name}: qase_suite is empty in the frontmatter")
-    cases = parse_cases(body)
+    drafts = parse_cases(body)
+    cases = [c for c in drafts if decision(c) == "approved"]
+    rejected = [c for c in drafts if decision(c) == "rejected"]
+    conflicts = [c for c in drafts if decision(c) == "conflict"]
+    validate(cases, path.name)
 
-    suite_id = ensure_suite(project, token, suite_path)
-    # Cases already in Qase: the IDs recorded in qase_cases (wherever they live now, e.g. a
-    # previous suite) plus any case with the same title in the target suite.
-    existing = {c["title"]: c["id"] for c in list_all(f"/case/{project}", token, {"suite_id": suite_id})}
-    alive = []  # keys from qase_cases that still exist in Qase
-    for case_id in case_numbers(frontmatter, project):
-        found = call("GET", f"/case/{project}/{case_id}", token, allow_404=True)
-        if found:
-            existing.setdefault(found["title"], found["id"])
-            alive.append(f"{project}-{case_id}")
+    new, old, keys = [], [], case_numbers(frontmatter, project)
+    keys = [f"{project}-{n}" for n in keys]
+    if cases:
+        suite_id = ensure_suite(project, token, suite_path)
+        # Cases already in Qase: the IDs recorded in qase_cases (wherever they live now, e.g. a
+        # previous suite) plus any case with the same title in the target suite.
+        existing = {c["title"]: c["id"] for c in list_all(f"/case/{project}", token, {"suite_id": suite_id})}
+        alive = []  # keys from qase_cases that still exist in Qase
+        for case_id in case_numbers(frontmatter, project):
+            found = call("GET", f"/case/{project}/{case_id}", token, allow_404=True)
+            if found:
+                existing.setdefault(found["title"], found["id"])
+                alive.append(f"{project}-{case_id}")
 
-    new = [c for c in cases if c["title"] not in existing]
-    old = [c for c in cases if c["title"] in existing]
+        new = [c for c in cases if c["title"] not in existing]
+        old = [c for c in cases if c["title"] in existing]
+        if new:
+            result = call("POST", f"/case/{project}/bulk", token,
+                          {"cases": [to_qase(c, story_id, suite_id, ids) for c in new]})
+            existing.update(zip((c["title"] for c in new), result["ids"]))
+        if old and not no_update:
+            for c in old:
+                call("PATCH", f"/case/{project}/{existing[c['title']]}", token,
+                     to_qase(c, story_id, suite_id, ids))
+        # Keep IDs pushed earlier (their drafts are already gone) and append the new ones.
+        keys = list(dict.fromkeys(alive + [f"{project}-{existing[c['title']]}" for c in cases]))
+        frontmatter = set_fm_list(frontmatter, "qase_cases", keys)
 
-    if new:
-        result = call("POST", f"/case/{project}/bulk", token,
-                      {"cases": [to_qase(c, story_id, suite_id, ids) for c in new]})
-        existing.update(zip((c["title"] for c in new), result["ids"]))
-    if old and not no_update:
-        for c in old:
-            call("PATCH", f"/case/{project}/{existing[c['title']]}", token,
-                 to_qase(c, story_id, suite_id, ids))
-
-    # Keep IDs pushed earlier (their drafts are already gone) and append the new ones.
-    keys = list(dict.fromkeys(alive + [f"{project}-{existing[c['title']]}" for c in cases]))
-    frontmatter = set_fm_list(frontmatter, "qase_cases", keys)
-    frontmatter = set_fm(frontmatter, "status", "analyzed")
-    # The drafts now live in Qase; drop the section up to the next "## " heading.
-    body = re.sub(r"^## Test cases[ \t]*\n.*?(?=^## |\Z)", "", body, count=1, flags=re.M | re.S)
+    # Drop the decided drafts; keep undecided and conflicting ones.
+    left = [c for c in drafts if decision(c) in ("draft", "conflict")]
+    section = cases_section(body)
+    if left:
+        kept = "".join(c["raw"].rstrip() + "\n\n" for c in left)
+        body = body[:section.start(1)] + "\n" + kept + body[section.end(1):]
+    else:
+        body = re.sub(r"^## Test cases[ \t]*\n.*?(?=^## |\Z)", "", body, count=1, flags=re.M | re.S)
+        if keys:
+            frontmatter = set_fm(frontmatter, "status", "analyzed")
     path.write_text(f"---\n{frontmatter}\n---\n{body}", encoding="utf-8")
 
-    print(f"{path.name}: suite '{suite_path}': created {len(new)}, "
-          f"{'skipped' if no_update else 'updated'} {len(old)}; qase_cases = [{', '.join(keys)}]; "
-          f"drafts removed, status: analyzed")
+    parts = []
+    if cases:
+        parts.append(f"suite '{suite_path}': created {len(new)}, "
+                     f"{'skipped' if no_update else 'updated'} {len(old)}")
+    if rejected:
+        parts.append(f"removed {len(rejected)} not relevant")
+    parts.append(f"{len(left)} drafts left" if left else "no drafts left, status: analyzed" if keys
+                 else "no drafts left")
+    print(f"{path.name}: " + "; ".join(parts) + (f"; qase_cases = [{', '.join(keys)}]" if cases else ""))
+    for c in conflicts:
+        print(f"  warning: '{c['title']}' is marked both Approved and Not relevant; left as a draft")
 
 
 def main() -> None:
@@ -395,7 +436,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("story", type=Path, nargs="?")
     ap.add_argument("--approved", action="store_true",
-                    help="push every story under user-stories/ that is approved and still has draft cases")
+                    help="process every story with drafts marked Approved or Not relevant")
     ap.add_argument("--sync", action="store_true",
                     help="update qase_cases of every story: drop cases deleted in Qase, add new ones from its suite")
     ap.add_argument("--show", action="store_true",
@@ -424,28 +465,33 @@ def main() -> None:
         stories = []
         for path in story_files():
             frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
-            if is_approved(frontmatter) and has_cases(body):
+            if has_decisions(body):
                 stories.append(path)
         if not stories:
-            print("nothing to push: no approved story has draft test cases")
+            print("nothing to push: no draft is marked Approved or Not relevant")
             return
     else:
         frontmatter, body = split_frontmatter(args.story.read_text(encoding="utf-8"))
-        if not has_cases(body):
-            sys.exit(f"error: {args.story.name} has no '## Test cases' section")
-        if not args.dry_run and not is_approved(frontmatter):
-            sys.exit(f"error: {args.story.name} is not approved. Review the cases, then set "
-                     "test_cases_approved: true in the frontmatter (--dry-run works without it)")
+        if not parse_cases(body):
+            sys.exit(f"error: {args.story.name} has no draft test cases")
+        if not args.dry_run and not has_decisions(body):
+            sys.exit(f"error: {args.story.name}: no draft is marked Approved or Not relevant. Tick "
+                     "the checkboxes first (--dry-run works without them)")
         stories = [args.story]
 
     if args.dry_run:
         for path in stories:
             frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
-            cases = parse_cases(body)
-            payload = [to_qase(c, fm_value(frontmatter, "id"), None) for c in cases]
+            drafts = parse_cases(body)
+            cases = [c for c in drafts if decision(c) != "rejected"]
+            validate(cases, path.name)
+            payload = [{"decision": decision(c), **to_qase(c, fm_value(frontmatter, "id"), None)} for c in cases]
             print(json.dumps({"story": path.name, "suite": fm_value(frontmatter, "qase_suite"),
                               "cases": payload}, indent=2, ensure_ascii=False))
-            print(f"{path.name}: {len(cases)} cases parsed, nothing sent (dry run)", file=sys.stderr)
+            counts = {d: sum(decision(c) == d for c in drafts) for d in ("approved", "rejected", "draft", "conflict")}
+            print(f"{path.name}: {len(drafts)} drafts parsed (approved {counts['approved']}, not relevant "
+                  f"{counts['rejected']}, undecided {counts['draft']}, conflicting {counts['conflict']}); "
+                  "nothing sent (dry run)", file=sys.stderr)
         return
 
     token = os.environ.get("QASE_API_TOKEN") or ask_token()

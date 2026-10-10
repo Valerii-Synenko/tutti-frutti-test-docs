@@ -48,7 +48,7 @@ Add a `## Suggested improvements` section right after `## Acceptance Criteria` (
 - A proposal is ready-to-paste text in the story's style, not advice like "make it clearer".
 - A question only the author can answer (a business decision, a mismatch with the code) goes to
   `## Open questions` with a file and line reference, not here.
-- Don't touch the story text, the status or `test_cases_approved` in this step.
+- Don't touch the story text, the status or any draft case checkboxes in this step.
 
 Reply with a short summary: how many items per weight and the `must` ones in one line each.
 

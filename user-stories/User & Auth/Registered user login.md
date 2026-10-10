@@ -19,7 +19,6 @@ qase_cases:
   - TF-36
   - TF-37
   - TF-38
-test_cases_approved: true
 code_commit: 4e3851b
 code_paths:
   - services/users-service/app/main.py
