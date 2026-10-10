@@ -25,6 +25,19 @@ qase_cases:
   - TF-21
   - TF-22
 test_cases_approved: true
+code_commit: 4e3851b
+code_paths:
+  - services/users-service/app/main.py
+  - services/users-service/app/security.py
+  - services/users-service/app/schemas.py
+  - services/users-service/app/config.py
+  - services/gateway/app/main.py
+  - ui/src/hooks/useAuth.tsx
+  - ui/src/api/client.ts
+  - ui/src/components/Navbar.tsx
+  - ui/src/hooks/useCart.tsx
+  - ui/src/pages/CabinetPage.tsx
+  - ui/src/pages/OrdersPage.tsx
 related:
   - "[[Registered user login]]"
   - "[[User registration]]"

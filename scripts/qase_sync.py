@@ -19,6 +19,7 @@ Usage:
     python3 scripts/qase_sync.py "<story path>"      # one story (must be approved)
     python3 scripts/qase_sync.py "<story path>" --dry-run   # validate drafts, send nothing
     python3 scripts/qase_sync.py --sync              # match qase_cases to Qase (deleted/added)
+    python3 scripts/qase_sync.py "<story path>" --show      # print the story's cases from Qase
 
 Settings (read from `.env` in the vault root; real env vars take precedence):
     QASE_API_TOKEN   API token (Qase → Workspace settings → API tokens).
@@ -329,6 +330,23 @@ def sync(project: str, token: str) -> None:
         print("in sync: qase_cases of every story match Qase")
 
 
+def show(path: Path, project: str, token: str) -> None:
+    """Prints a story's cases as they are in Qase, compactly, for reviewing them against changes."""
+    frontmatter, _ = split_frontmatter(path.read_text(encoding="utf-8"))
+    for n in case_numbers(frontmatter, project):
+        case = call("GET", f"/case/{project}/{n}", token, allow_404=True)
+        if not case:
+            print(f"{project}-{n}: not in Qase (run --sync)")
+            continue
+        tags = ", ".join(t.get("title", "") for t in case.get("tags") or [])
+        print(f"\n{project}-{n} {case['title']}  [{tags}]")
+        for step in sorted(case.get("steps") or [], key=lambda s: s["position"]):
+            print(f"  {step['position']}. {step.get('action') or ''}")
+            for key in ("expected_result", "data"):
+                if step.get(key):
+                    print(f"     {key}: " + step[key].replace("\n", "\n     "))
+
+
 def push_story(path: Path, project: str, token: str, ids, no_update: bool) -> None:
     frontmatter, body = split_frontmatter(path.read_text(encoding="utf-8"))
     story_id, suite_path = fm_value(frontmatter, "id"), fm_value(frontmatter, "qase_suite")
@@ -380,6 +398,8 @@ def main() -> None:
                     help="push every story under user-stories/ that is approved and still has draft cases")
     ap.add_argument("--sync", action="store_true",
                     help="update qase_cases of every story: drop cases deleted in Qase, add new ones from its suite")
+    ap.add_argument("--show", action="store_true",
+                    help="print the story's cases from Qase (key, title, steps, expected result); read-only")
     ap.add_argument("--project", default=os.environ.get("QASE_PROJECT") or DEFAULT_PROJECT)
     ap.add_argument("--dry-run", action="store_true", help="parse and print the payload, call nothing")
     ap.add_argument("--no-update", action="store_true",
@@ -392,6 +412,12 @@ def main() -> None:
         if args.dry_run:
             ap.error("--sync has no dry run; it only changes qase_cases in the stories")
         sync(args.project, os.environ.get("QASE_API_TOKEN") or ask_token())
+        return
+
+    if args.show:
+        if not args.story:
+            ap.error("--show needs a story path")
+        show(args.story, args.project, os.environ.get("QASE_API_TOKEN") or ask_token())
         return
 
     if args.approved:

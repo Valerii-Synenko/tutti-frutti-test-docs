@@ -46,7 +46,8 @@ user-stories/
 templates/
   user-story.md                ← template for new stories
 scripts/
-  qase_sync.py                 ← pushes test cases to Qase
+  qase_sync.py                 ← pushes test cases to Qase, syncs qase_cases
+  code_impact.py               ← finds stories whose product code changed since they were analysed
 CLAUDE.md                      ← rules that always apply (product, formats, conventions)
 .claude/skills/                ← workflows: story review, test design, Qase push and sync
 .env.example                   ← Qase settings template (.env is created on the first push)
@@ -219,6 +220,7 @@ it's needed, which keeps every session's context small:
 | `/generate-cases` | checks the story against the code and designs draft test cases |
 | `/qase-push` | pushes approved cases to Qase |
 | `/sync-cases` | updates `qase_cases` after cases are added or deleted in Qase by hand |
+| `/code-impact` | shows which stories and Qase cases are affected by product code changes |
 
 A session start hook pulls the latest product code before each session. Story analysis and case
 drafts are produced with Claude's help and reviewed by hand.

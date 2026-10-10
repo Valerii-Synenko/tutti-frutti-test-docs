@@ -23,6 +23,17 @@ qase_cases:
   - TF-56
   - TF-57
 test_cases_approved: true
+code_commit: 4e3851b
+code_paths:
+  - services/users-service/app/main.py
+  - services/users-service/app/security.py
+  - services/users-service/app/schemas.py
+  - services/users-service/app/config.py
+  - services/gateway/app/main.py
+  - ui/src/hooks/useAuth.tsx
+  - ui/src/api/client.ts
+  - ui/src/components/Navbar.tsx
+  - ui/src/pages/RegisterPage.tsx
 related:
   - "[[Registered user login]]"
 ---

@@ -71,7 +71,9 @@ templates/
   user-story.md            ← template for the core Templates plugin
 scripts/
   qase_sync.py             ← pushes test cases to Qase, syncs qase_cases
-.claude/skills/            ← workflows: new-story, review-story, generate-cases, qase-push, sync-cases
+  code_impact.py           ← finds stories whose product code changed since code_commit
+.claude/skills/            ← workflows: new-story, review-story, generate-cases, qase-push,
+                             sync-cases, code-impact
 .env                       ← Qase credentials (gitignored; template: .env.example)
 CLAUDE.md
 ```
@@ -93,6 +95,8 @@ status: draft            # draft → ready → analyzed
 qase_suite: User & Auth.Login
 qase_cases: []           # Qase case keys (TF-2, TF-3, ...), filled in by the sync script
 test_cases_approved: false  # the user sets true to push the draft cases
+code_commit: 4e3851b     # product commit the story was analysed against
+code_paths: []           # product files the story depends on (for code-impact)
 related: ["[[Registered user login]]"]
 ---
 
@@ -135,6 +139,7 @@ related: ["[[Registered user login]]"]
 | `generate-cases` | design draft test cases (test design rules and the case format live here) |
 | `qase-push` | push approved cases to Qase |
 | `sync-cases` | bring `qase_cases` in line with Qase after manual changes there |
+| `code-impact` | find stories and cases affected by product code changes since `code_commit` |
 
 ## Qase
 

@@ -17,6 +17,8 @@ argument-hint: <feature area> / <story name or topic>
    - `qase_suite: <area>.<short feature name>`, e.g. `User & Auth.Logout`
    - `qase_cases: []`, `test_cases_approved: false`
    - `related:` wikilinks to related stories as a block list (`  - "[[Registered user login]]"`)
+   - `code_commit:` the product commit you read (`git -C .product/tutti-frutti rev-parse --short
+     HEAD`) and `code_paths:` the files the story depends on, as a block list
 4. **Body:** Description (As a / I want to / So that) and numbered ACs, grouped under `###`
    headings when there are many. Base them on how the product actually behaves
    (`.product/tutti-frutti`): exact texts, limits, pages, so the story is testable. Name pages and
