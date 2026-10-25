@@ -5,8 +5,10 @@ shop built on microservices (users, catalogue, inventory, orders, AI assistant, 
 
 This repository holds the QA side of the project: user stories, their analysis against the real
 code, and test cases that are pushed to [Qase](https://qase.io) and later referenced from the
-automated tests. It is an [Obsidian](https://obsidian.md) vault, so it reads like a set of linked
-notes, but every file is plain Markdown and renders on GitHub as well.
+automated tests. It is edited in [VS Code](https://code.visualstudio.com) with the
+[Foam](https://foambubble.github.io/foam/) extension, so stories link to each other with
+`[[wikilinks]]` and have backlinks and a graph view, but every file is plain Markdown and renders
+on GitHub as well.
 
 ## Workflow
 
@@ -29,7 +31,7 @@ notes, but every file is plain Markdown and renders on GitHub as well.
    decision tables and state transitions. Every case traces back to an AC, every AC has at least
    one case, and every case states where it is best automated: `API`, `UI` (Playwright) or `both`.
 4. **Approval and Qase.** Every draft case has two checkboxes, `Approved` and `Not relevant`,
-   ticked in Obsidian after review (a draft can be edited by hand first). `scripts/qase_sync.py`
+   ticked in the editor after review (a draft can be edited by hand first). `scripts/qase_sync.py`
    pushes the approved drafts to Qase with those edits, writes their keys (`TF-2`, `TF-3`, ...)
    into the frontmatter and removes them from the story; not relevant drafts are dropped. When no
    drafts are left, the story is marked `analyzed`. From then on Qase is the source of truth.
@@ -44,13 +46,14 @@ user-stories/
     User registration.md
     Registered user login.md
     User logout.md
-templates/
+.foam/templates/
   user-story.md                ← template for new stories
 scripts/
   qase_sync.py                 ← pushes test cases to Qase, syncs qase_cases
   code_impact.py               ← finds stories whose product code changed since they were analysed
 CLAUDE.md                      ← rules that always apply (product, formats, conventions)
 .claude/skills/                ← workflows: story review, test design, Qase push and sync
+.vscode/                       ← shared VS Code settings, recommended extensions, tasks
 .env.example                   ← Qase settings template (.env is created on the first push)
 ```
 
@@ -109,7 +112,7 @@ The story format is in [CLAUDE.md](CLAUDE.md); the test case format and the test
 
 ## Setup
 
-Requirements: Python 3.10+ (standard library only), optionally Obsidian.
+Requirements: Python 3.10+ (standard library only) and [VS Code](https://code.visualstudio.com).
 
 ```bash
 git clone <this repo> tutti-frutti-test-docs
@@ -124,30 +127,33 @@ On the first push the script asks for it, saves it to `.env` in the repo root (g
 committed) and doesn't ask again. If the Qase project `TF` doesn't exist in your workspace yet, the
 script creates it. To use another project, set `QASE_PROJECT` in `.env` (see `.env.example`).
 
-`.env` starts with a dot, so Finder and Obsidian hide it. You normally don't need to open it; if
-you do (e.g. to replace the token), press `Cmd + Shift + .` in Finder or open the folder in a code
-editor.
+`.env` starts with a dot, so Finder hides it; VS Code shows it in the Explorer. You normally don't
+need to open it, except to replace the token.
 
-Open the folder as a vault in Obsidian to browse stories with backlinks and the graph view.
+### Working in VS Code
 
-### Working with the scripts
+Open the folder (**File → Open Folder...**) and install the extensions VS Code suggests
+(`.vscode/extensions.json`):
 
-Obsidian can't open or edit `.py` files, so `scripts/` looks empty there. To view, edit and run
-the scripts, I recommend [Thonny](https://thonny.org), a free, lightweight Python editor that
-ships with its own Python, so there is nothing else to install. To see the `.py` files in the
-Obsidian file list as well, turn on **Settings → Files & links → Detect all file extensions**.
+| Extension | What it gives |
+|---|---|
+| [Foam](https://marketplace.visualstudio.com/items?itemName=foam.foam-vscode) | `[[wikilinks]]` with autocomplete and go-to (`Cmd + click`), backlinks in the **Connections** panel, **Foam: Show Graph**, new stories from the template |
+| [Markdown All in One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) | `Alt + C` toggles the checkbox under the cursor (`Approved` / `Not relevant`), list and table helpers |
+| [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python) | editing and running `scripts/` |
+| [Claude Code](https://marketplace.visualstudio.com/items?itemName=anthropic.claude-code) | the AI workflows below |
 
-`qase_sync.py` needs the story path as an argument, so pressing **Run** in Thonny without one
-stops with `error: the following arguments are required: story`. To pass it:
-
-1. Turn on **View → Program arguments**. A text field appears in the toolbar.
-2. Enter the story path, relative to `scripts/` (Thonny runs a script from its own folder), plus
-   `--dry-run` for a check without sending anything:
-   ```
-   "../user-stories/User & Auth/User logout.md" --dry-run
-   ```
-3. Press **Run**. To push, tick `Approved` / `Not relevant` on the drafts and replace the
-   arguments with `--approved`.
+- **Preview:** `Cmd + Shift + V` (or `Cmd + K V` side by side). The frontmatter is shown as YAML at
+  the top of the file.
+- **New story by hand:** Command Palette → **Foam: Create New Note From Template** →
+  `user-story`, in the feature area folder. Or ask Claude (`/new-story`), which also picks the
+  next free id.
+- **Product code:** `.product/tutti-frutti` is visible in the Explorer but opens read-only and is
+  left out of search and the Foam graph. To search it, toggle **Use Exclude Settings** in the
+  search panel.
+- **Scripts:** **Terminal → Run Task...** offers ready tasks: `Qase: dry run (current story)` and
+  `Qase: push current story` (for the story open in the editor), `Qase: push all approved`,
+  `Qase: sync qase_cases` and `Code impact`. On the first push the task asks for the Qase token in
+  its terminal. The commands below work in the integrated terminal as well.
 
 ## Pushing test cases to Qase
 
@@ -217,8 +223,8 @@ payload before anything is sent, and it works without an AI assistant at all.
 
 ## AI-assisted
 
-The vault is set up for [Claude Code](https://claude.com/claude-code). `CLAUDE.md` holds only the
-rules that always apply (product, vault structure, story format, Qase basics); each workflow is a
+The repo is set up for [Claude Code](https://claude.com/claude-code). `CLAUDE.md` holds only the
+rules that always apply (product, repo structure, story format, Qase basics); each workflow is a
 [skill](https://docs.claude.com/en/docs/claude-code/skills) in `.claude/skills/`, loaded only when
 it's needed, which keeps every session's context small:
 
@@ -234,6 +240,6 @@ it's needed, which keeps every session's context small:
 A session start hook pulls the latest product code before each session. Story analysis and case
 drafts are produced with Claude's help and reviewed by hand.
 
-Vault content is always written in English, but the chat language is personal: on the first
+Repo content is always written in English, but the chat language is personal: on the first
 session, Claude asks which language you prefer and saves it to `CLAUDE.local.md` (gitignored).
-The vault user can change it manually at any time in `CLAUDE.local.md`.
+You can change it manually at any time in `CLAUDE.local.md`.

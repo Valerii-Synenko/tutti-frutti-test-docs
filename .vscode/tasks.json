@@ -1,0 +1,41 @@
+{
+  // Terminal → Run Task. "current story" tasks use the file open in the editor.
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Qase: dry run (current story)",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/qase_sync.py", "${file}", "--dry-run"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Qase: push current story",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/qase_sync.py", "${file}"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Qase: push all approved",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/qase_sync.py", "--approved"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Qase: sync qase_cases",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/qase_sync.py", "--sync"],
+      "problemMatcher": []
+    },
+    {
+      "label": "Code impact",
+      "type": "process",
+      "command": "python3",
+      "args": ["scripts/code_impact.py"],
+      "problemMatcher": []
+    }
+  ]
+}

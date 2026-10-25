@@ -22,7 +22,7 @@ What it does, for every story in `user-stories/`:
   way to tell which story they belong to. Mention them if the user expects them to be picked up.
 
 It makes two read requests (all cases, all suites) and changes nothing in Qase. In the stories it
-rewrites only `qase_cases`, as a block list (`- TF-2` lines), so Obsidian doesn't reformat it.
+rewrites only `qase_cases`, as a block list (`- TF-2` lines), the style the stories use.
 
 ## Report
 

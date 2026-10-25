@@ -2,7 +2,7 @@
 """Push the approved test cases of user stories to Qase.
 
 A story's draft cases live in its `## Test cases` section (format: see the
-generate-cases skill). Each draft has two checkboxes the user ticks in Obsidian:
+generate-cases skill). Each draft has two checkboxes the user ticks in the editor:
 
     - [x] Approved        → pushed to Qase (with any manual edits), then removed
     - [ ] Not relevant    → removed from the story, never pushed
@@ -24,7 +24,7 @@ Usage:
     python3 scripts/qase_sync.py --sync              # match qase_cases to Qase (deleted/added)
     python3 scripts/qase_sync.py "<story path>" --show      # print the story's cases from Qase
 
-Settings (read from `.env` in the vault root; real env vars take precedence):
+Settings (read from `.env` in the repo root; real env vars take precedence):
     QASE_API_TOKEN   API token (Qase → Workspace settings → API tokens).
                      If it's missing, the script asks for it once and saves it to `.env`.
     QASE_PROJECT     project code (or pass --project), default TF. The project is
@@ -300,7 +300,7 @@ def set_fm(frontmatter: str, key: str, value: str) -> str:
 
 
 def fm_list(frontmatter: str, key: str) -> list[str]:
-    """Reads a list in either YAML style: flow `[a, b]` or block (`- a` lines, as Obsidian saves it)."""
+    """Reads a list in either YAML style: flow `[a, b]` or block (`- a` lines, as the stories use)."""
     m = re.search(_fm_entry(key), frontmatter, re.M)
     if not m:
         return []
@@ -311,7 +311,7 @@ def fm_list(frontmatter: str, key: str) -> list[str]:
 
 
 def set_fm_list(frontmatter: str, key: str, items: list[str]) -> str:
-    """Writes a list in the block style Obsidian uses, so Obsidian doesn't rewrite it."""
+    """Writes a list in block style, the one the stories use."""
     return set_fm(frontmatter, key, "".join(f"\n  - {i}" for i in items) if items else "[]")
 
 

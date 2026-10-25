@@ -1,6 +1,6 @@
 ---
 name: new-story
-description: Create a new user story file from templates/user-story.md with the next free US-<n> id, the Qase sub-suite and wikilinks to related stories. Use when the user asks to create or write a new user story ("create a user story for ...").
+description: Create a new user story file from .foam/templates/user-story.md with the next free US-<n> id, the Qase sub-suite and wikilinks to related stories. Use when the user asks to create or write a new user story ("create a user story for ...").
 argument-hint: <feature area> / <story name or topic>
 ---
 
@@ -12,7 +12,7 @@ argument-hint: <feature area> / <story name or topic>
    which stories already exist and ask which flow to describe.
 2. **Id.** The next free number across all folders: find the highest `id: US-<n>` and add 1. No
    leading zeros.
-3. **Frontmatter** from `templates/user-story.md`:
+3. **Frontmatter** from `.foam/templates/user-story.md`:
    - `status: draft`
    - `qase_suite: <area>.<short feature name>`, e.g. `User & Auth.Logout`
    - `qase_cases: []`

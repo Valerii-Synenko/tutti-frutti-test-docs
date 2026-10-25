@@ -8,10 +8,6 @@
 .claude/settings.local.json
 CLAUDE.local.md
 
-# Obsidian: per-device UI state (open tabs, panes)
-.obsidian/workspace.json
-.obsidian/workspace-mobile.json
-
 # OS / Python junk
 .DS_Store
 __pycache__/

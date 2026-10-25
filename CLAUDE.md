@@ -1,13 +1,13 @@
-# Tutti Frutti — test documentation (Obsidian vault)
+# Tutti Frutti — test documentation (VS Code + Foam)
 
-This vault holds the user stories for the **Tutti Frutti** product and everything needed for
+This repo holds the user stories for the **Tutti Frutti** product and everything needed for
 test design: story analysis, test cases, glossary. No product code is written here. The product code is
 cloned into `.product/tutti-frutti` (GitHub: https://github.com/Valerii-Synenko/tutti-frutti);
 read it whenever you need to check behaviour against the requirements.
 
 - A SessionStart hook runs `git pull` there on every start and reports the current commit.
 - The clone is a read-only mirror: never edit, commit or check out branches in `.product/`.
-- `.product/` is a hidden folder, so Obsidian doesn't index it.
+- `.product/` is excluded from Foam and search and opened read-only in VS Code (`.vscode/settings.json`).
 
 Product README (loaded into context on every start):
 @.product/tutti-frutti/README.md
@@ -59,34 +59,35 @@ Roles are carried as claims in the JWT.
 | Cabinet | `/cabinet` | `CabinetPage` |
 | NavBar | on every page | `Navbar` |
 
-## Vault structure
+## Repo structure
 
 ```
 user-stories/
   <Feature area>/          ← folder name = suite in Qase (e.g. "User & Auth")
     <Story name>.md
 .product/
-  tutti-frutti/            ← read-only clone of the product repo (hidden from Obsidian)
-templates/
-  user-story.md            ← template for the core Templates plugin
+  tutti-frutti/            ← read-only clone of the product repo (ignored by Foam)
+.foam/templates/
+  user-story.md            ← story template (also used by Foam: Create New Note From Template)
 scripts/
   qase_sync.py             ← pushes test cases to Qase, syncs qase_cases
   code_impact.py           ← finds stories whose product code changed since code_commit
 .claude/skills/            ← workflows: new-story, review-story, generate-cases, qase-push,
                              sync-cases, code-impact
 .env                       ← Qase credentials (gitignored; template: .env.example)
+.vscode/                   ← shared VS Code settings, recommended extensions, tasks for the scripts
 CLAUDE.md
 ```
 
 - One story = one file. The file name matches the story name.
-- Link stories with wikilinks such as `[[Registered user login]]`, not markdown links, so Obsidian
+- Link stories with wikilinks such as `[[Registered user login]]`, not markdown links, so Foam
   tracks backlinks and the graph.
 - Don't rename or move files unless asked; it breaks wikilinks.
-- Don't touch `.obsidian/`.
+- Change `.vscode/` only when asked: it is shared by everyone who opens the repo.
 
 ## User story format
 
-New stories are created from `templates/user-story.md`.
+New stories are created from `.foam/templates/user-story.md`.
 
 ```markdown
 ---
@@ -112,9 +113,8 @@ related: ["[[Registered user login]]"]
 
 - Story IDs are `US-<n>` without leading zeros (`US-1`, `US-12`). A new story takes the next free
   number across all folders.
-- Edit the frontmatter as YAML properties (Obsidian Properties). Don't duplicate these values in
-  the body.
-- Write non-empty lists in block style (`key:` then `  - item` lines), the way Obsidian saves them;
+- Keep these values in the YAML frontmatter only; don't duplicate them in the body.
+- Write non-empty lists in block style (`key:` then `  - item` lines), as the existing stories do;
   an empty list stays `[]`. When changing a list, replace the whole entry, including its `- item`
   lines, or the YAML ends up with two values.
 - If an older story has no frontmatter, add it when you work on that story, without changing the
@@ -171,4 +171,4 @@ Chat language: <language>
 
 To change the language later, I can just say so; update the line in `CLAUDE.local.md`.
 
-Write all vault content (stories, test cases, frontmatter) in English.
+Write all repo content (stories, test cases, frontmatter) in English.
